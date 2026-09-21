@@ -1,5 +1,5 @@
 import "./styles.css";
-import { dedication, messages, flowerTags, shapeNames, orbitPhrases } from "./content";
+import { dedication, messages, flowerTags, shapeNames, orbitPhrases, photos } from "./content";
 import { RomanticScene } from "./scene";
 
 const app = document.querySelector<HTMLDivElement>("#app");
@@ -53,13 +53,13 @@ app.innerHTML = `
     </section>
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
-    <audio id="music" loop preload="none"></audio>
+    <audio id="music" loop preload="auto"></audio>
 
     <div class="modal" id="message-modal" role="dialog" aria-modal="true" aria-labelledby="message-text" hidden>
       <button class="modal-backdrop" type="button" data-close aria-label="Cerrar mensaje"></button>
       <article class="memory-card">
         <button class="close" type="button" data-close aria-label="Cerrar mensaje">×</button>
-        <div class="photo-placeholder"><span>Fotografía aquí</span><small>Podrás reemplazarla después</small></div>
+        <div class="photo-placeholder has-photo" id="message-photo" hidden></div>
         <p id="message-text"></p>
         <span class="card-signature">Para ${dedication.name} ${dedication.heart}</span>
       </article>
@@ -97,6 +97,8 @@ function beginExperience() {
   scene.startIntroAnimation();
   setTimeout(() => welcome.setAttribute("hidden", ""), 1200);
   autoMorph = window.setInterval(() => scene.nextShape(), 6800);
+  // El toque en la flor cuenta como interacción, así que el navegador permite iniciar la música
+  void playMusic(true);
 }
 
 function triggerNextShape() {
@@ -128,19 +130,32 @@ function showToast(text: string) {
 const music = document.querySelector<HTMLAudioElement>("#music")!;
 const audioButton = document.querySelector<HTMLButtonElement>("#audio-toggle")!;
 if (dedication.audioSrc) music.src = dedication.audioSrc;
-audioButton.addEventListener("click", async () => {
+
+function setMusicState(playing: boolean) {
+  audioButton.classList.toggle("active", playing);
+  audioButton.setAttribute("aria-label", playing ? "Pausar música" : "Activar música");
+}
+
+async function playMusic(silent = false) {
   if (!dedication.audioSrc) {
-    showToast("La canción definitiva se podrá añadir aquí ♫");
+    if (!silent) showToast("Falta añadir la canción en public/music ♫");
     return;
   }
-  if (music.paused) {
+  try {
     await music.play();
-    audioButton.classList.add("active");
-    audioButton.setAttribute("aria-label", "Pausar música");
+    setMusicState(true);
+  } catch {
+    // El navegador puede bloquear el audio o el archivo no existe todavía
+    if (!silent) showToast("No se pudo reproducir la música ♫");
+  }
+}
+
+audioButton.addEventListener("click", () => {
+  if (music.paused) {
+    void playMusic();
   } else {
     music.pause();
-    audioButton.classList.remove("active");
-    audioButton.setAttribute("aria-label", "Activar música");
+    setMusicState(false);
   }
 });
 
@@ -162,10 +177,19 @@ function closeModal(modal: HTMLElement) {
 
 const messageModal = document.querySelector<HTMLElement>("#message-modal")!;
 const messageText = document.querySelector<HTMLElement>("#message-text")!;
+const messagePhoto = document.querySelector<HTMLElement>("#message-photo")!;
 let messageIndex = 0;
 function showMessage(index: number) {
   messageIndex = index % messages.length;
   messageText.textContent = messages[messageIndex];
+  const photo = photos[messageIndex];
+  if (photo) {
+    messagePhoto.hidden = false;
+    messagePhoto.innerHTML = `<img src="${photo}" alt="Recuerdo ${messageIndex + 1}" />`;
+  } else {
+    messagePhoto.hidden = true;
+    messagePhoto.innerHTML = "";
+  }
   openModal(messageModal);
 }
 scene.onFlowerClick = showMessage;

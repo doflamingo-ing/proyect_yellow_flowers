@@ -3,7 +3,8 @@ export const dedication = {
   heart: "❤️",
   title: "Para ti, Abii",
   body: "Desde que llegaste a mi vida, cada momento tiene un significado especial. Gracias por estar conmigo, por cada sonrisa, cada recuerdo y por hacer que incluso los días más simples se sientan únicos. Esta pequeña sorpresa es solo una forma de recordarte lo importante que eres para mí y lo bonito que es compartir mi vida contigo.",
-  audioSrc: "",
+  // Pon tu canción en public/music/ con este nombre (o cambia la ruta si se llama distinto)
+  audioSrc: "/music/cancion.mp3",
 };
 
 export const messages = [
@@ -19,6 +20,22 @@ export const messages = [
   "Te quiero más de lo que estas palabras pueden explicar.",
 ];
 
+// Foto de cada flor (mismo orden que los mensajes de arriba).
+// Guarda las imágenes en public/photos/ y escribe aquí su ruta, por ejemplo "/photos/01.jpg".
+// Si una queda vacía ("") la tarjeta se muestra solo con el mensaje.
+export const photos = [
+  "/photos/abi1.png",
+  "/photos/abi2.png",
+  "/photos/abi3.png",
+  "/photos/abi4.png",
+  "/photos/abi5.png",
+  "/photos/abi6.png",
+  "/photos/abi7.png",
+  "",
+  "",
+  "",
+];
+
 export const flowerTags = [
   "Mi lugar favorito",
   "Momentos especiales",
@@ -32,7 +49,7 @@ export const flowerTags = [
   "Amor infinito",
 ];
 
-export const shapeNames = ["Flor", "Corazón", "Mariposa", "Luna", "Estrella"];
+export const shapeNames = ["Flor", "Corazón", "Mariposa", "Luna", "Estrella", "Elliot"];
 
 // Frases que giran alrededor de la galaxia (se reparten en dos anillos)
 export const orbitPhrases = [

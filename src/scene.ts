@@ -405,7 +405,136 @@ const star: ShapeFactory = (count, random) => {
   return { positions, colors };
 };
 
-const factories = [flower, heart, butterfly, crescent, star];
+type Vec3 = [number, number, number];
+type Rgb = [number, number, number];
+type PartSampler = (random: () => number) => [number, number, number, number, number, number];
+
+function sphereDirection(random: () => number): Vec3 {
+  const z = random() * 2 - 1;
+  const angle = random() * Math.PI * 2;
+  const s = Math.sqrt(1 - z * z);
+  return [s * Math.cos(angle), s * Math.sin(angle), z];
+}
+
+function tint(color: Rgb, random: () => number): Rgb {
+  const k = 0.84 + 0.16 * random();
+  return [color[0] * k, color[1] * k, color[2] * k];
+}
+
+// Elipsoide con la mayoría de puntos sobre la superficie; `skip` permite dejar huecos (pupilas)
+function ellipsoidPart(center: Vec3, radii: Vec3, color: Rgb, skip?: (d: Vec3) => boolean): PartSampler {
+  return (random) => {
+    let d = sphereDirection(random);
+    while (skip && skip(d)) d = sphereDirection(random);
+    const k = random() < 0.78 ? 1 : Math.cbrt(random());
+    const [r, g, b] = tint(color, random);
+    return [center[0] + d[0] * radii[0] * k, center[1] + d[1] * radii[1] * k, center[2] + d[2] * radii[2] * k, r, g, b];
+  };
+}
+
+// Tubo grueso que sigue una polilínea (astas, brazos)
+function tubePart(points: Vec3[], radiusStart: number, radiusEnd: number, color: Rgb): PartSampler {
+  return (random) => {
+    const segments = points.length - 1;
+    const seg = Math.min(segments - 1, Math.floor(random() * segments));
+    const t = random();
+    const a = points[seg];
+    const b = points[seg + 1];
+    const radius = radiusStart + (radiusEnd - radiusStart) * ((seg + t) / segments);
+    const d = sphereDirection(random);
+    const k = 0.7 + 0.3 * random();
+    const [r, g, bl] = tint(color, random);
+    return [
+      a[0] + (b[0] - a[0]) * t + d[0] * radius * k,
+      a[1] + (b[1] - a[1]) * t + d[1] * radius * k,
+      a[2] + (b[2] - a[2]) * t + d[2] * radius * k,
+      r,
+      g,
+      bl,
+    ];
+  };
+}
+
+// Corazón que Elliot sostiene frente al pecho
+function heldHeartPart(center: Vec3, scale: number): PartSampler {
+  return (random) => {
+    const t = (random() - 0.5) * Math.PI * 2;
+    const hx = 16 * Math.pow(Math.sin(t), 3);
+    const hy = 13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t);
+    const fill = Math.pow(random(), 0.5);
+    const z = center[2] + (random() - 0.5) * 0.2 * (1 - fill * fill * 0.7);
+    if (fill > 0.8) return [center[0] + hx * scale * fill, center[1] + (hy + 2.5) * scale * fill, z, 1.0, 0.16, 0.3];
+    return [center[0] + hx * scale * fill, center[1] + (hy + 2.5) * scale * fill, z, 1.0, 0.42, 0.52];
+  };
+}
+
+// Elliot (Open Season): venado de astas disparejas abrazando un corazón
+const elliot: ShapeFactory = (count, random) => {
+  const positions = new Float32Array(count * 3);
+  const colors = new Float32Array(count * 3);
+
+  // Tonos claros: el material es aditivo, así que los colores oscuros desaparecerían
+  const brown: Rgb = [0.78, 0.46, 0.2];
+  const cream: Rgb = [1.0, 0.9, 0.7];
+  const antler: Rgb = [0.95, 0.78, 0.5];
+  const white: Rgb = [0.9, 0.9, 0.85];
+  const pink: Rgb = [1.0, 0.62, 0.6];
+  const nose: Rgb = [0.5, 0.26, 0.3];
+  const hoof: Rgb = [0.55, 0.32, 0.18];
+  const pupilHole = (d: Vec3) => d[2] > 0.78;
+
+  const parts: { weight: number; sample: PartSampler }[] = [
+    { weight: 0.17, sample: ellipsoidPart([0, 0.95, 0], [0.52, 0.46, 0.44], brown) },
+    { weight: 0.05, sample: ellipsoidPart([0, 0.8, 0.36], [0.27, 0.2, 0.24], cream) },
+    { weight: 0.012, sample: ellipsoidPart([0, 0.87, 0.58], [0.09, 0.065, 0.055], nose) },
+    { weight: 0.018, sample: ellipsoidPart([-0.2, 1.06, 0.38], [0.095, 0.095, 0.095], white, pupilHole) },
+    { weight: 0.018, sample: ellipsoidPart([0.2, 1.06, 0.38], [0.095, 0.095, 0.095], white, pupilHole) },
+    { weight: 0.03, sample: ellipsoidPart([-0.58, 1.2, -0.02], [0.27, 0.13, 0.07], brown) },
+    { weight: 0.03, sample: ellipsoidPart([0.58, 1.2, -0.02], [0.27, 0.13, 0.07], brown) },
+    { weight: 0.012, sample: ellipsoidPart([-0.58, 1.2, 0.03], [0.19, 0.08, 0.04], pink) },
+    { weight: 0.012, sample: ellipsoidPart([0.58, 1.2, 0.03], [0.19, 0.08, 0.04], pink) },
+    // Asta izquierda completa y ramificada
+    { weight: 0.05, sample: tubePart([[-0.28, 1.3, 0], [-0.4, 1.6, 0], [-0.35, 1.8, 0.02], [-0.5, 2.05, 0.02]], 0.06, 0.03, antler) },
+    { weight: 0.016, sample: tubePart([[-0.4, 1.6, 0], [-0.72, 1.78, 0]], 0.04, 0.025, antler) },
+    { weight: 0.016, sample: tubePart([[-0.36, 1.76, 0.01], [-0.12, 1.94, 0.01]], 0.035, 0.022, antler) },
+    // Asta derecha rota: solo un muñón
+    { weight: 0.026, sample: tubePart([[0.28, 1.3, 0], [0.4, 1.5, 0], [0.36, 1.64, 0]], 0.07, 0.05, antler) },
+    { weight: 0.008, sample: tubePart([[0.4, 1.5, 0], [0.56, 1.58, 0]], 0.03, 0.02, antler) },
+    { weight: 0.03, sample: ellipsoidPart([0, 0.5, 0], [0.3, 0.25, 0.3], brown) },
+    { weight: 0.15, sample: ellipsoidPart([0, 0, -0.02], [0.55, 0.68, 0.42], brown) },
+    { weight: 0.05, sample: ellipsoidPart([0, -0.02, 0.2], [0.36, 0.52, 0.28], cream) },
+    // Brazos hacia el corazón
+    { weight: 0.04, sample: tubePart([[-0.5, 0.35, 0.05], [-0.56, 0.05, 0.4], [-0.55, -0.05, 0.7]], 0.11, 0.09, brown) },
+    { weight: 0.04, sample: tubePart([[0.5, 0.35, 0.05], [0.56, 0.05, 0.4], [0.55, -0.05, 0.7]], 0.11, 0.09, brown) },
+    { weight: 0.014, sample: ellipsoidPart([-0.55, -0.05, 0.72], [0.11, 0.11, 0.1], cream) },
+    { weight: 0.014, sample: ellipsoidPart([0.55, -0.05, 0.72], [0.11, 0.11, 0.1], cream) },
+    { weight: 0.05, sample: ellipsoidPart([-0.26, -0.95, 0.08], [0.2, 0.4, 0.22], brown) },
+    { weight: 0.05, sample: ellipsoidPart([0.26, -0.95, 0.08], [0.2, 0.4, 0.22], brown) },
+    { weight: 0.014, sample: ellipsoidPart([-0.26, -1.3, 0.14], [0.2, 0.09, 0.25], hoof) },
+    { weight: 0.014, sample: ellipsoidPart([0.26, -1.3, 0.14], [0.2, 0.09, 0.25], hoof) },
+    { weight: 0.17, sample: heldHeartPart([0, -0.05, 0.74], 0.036) },
+  ];
+  const total = parts.reduce((sum, part) => sum + part.weight, 0);
+
+  for (let i = 0; i < count; i += 1) {
+    let pick = random() * total;
+    let part = parts[parts.length - 1];
+    for (const candidate of parts) {
+      pick -= candidate.weight;
+      if (pick <= 0) {
+        part = candidate;
+        break;
+      }
+    }
+    const [x, y, z, r, g, b] = part.sample(random);
+    // El centro del corazón queda justo sobre el sol central (0, 0.15, 0), que lo hace brillar por dentro
+    const s = 1.05;
+    setPointAndColor(positions, colors, i, x * s, (y + 0.05) * s + 0.15, z * s, r, g, b);
+  }
+  return { positions, colors };
+};
+
+const factories = [flower, heart, butterfly, crescent, star, elliot];
 
 export interface FlowerPositionInfo {
   index: number;
@@ -437,6 +566,7 @@ export class RomanticScene {
     stem: THREE.MeshStandardMaterial;
   };
   private phraseRings: { group: THREE.Group; speed: number }[] = [];
+  private phraseSprites: THREE.Sprite[] = [];
   private orbiters: { pivot: THREE.Group; flower: THREE.Group; speed: number; phase: number }[] = [];
   private flowerTargets: THREE.Object3D[] = [];
   private raycaster = new THREE.Raycaster();
@@ -1196,7 +1326,7 @@ export class RomanticScene {
       { radius: 5.5, y: 0.35, tiltX: 0.2, tiltZ: -0.08, speed: 0.05 },
       { radius: 6.6, y: -0.15, tiltX: -0.16, tiltZ: 0.1, speed: -0.037 },
     ];
-    const width = isCompact ? 2.7 : 3.4;
+    const width = isCompact ? 2.3 : 2.9;
     this.phrases.forEach((text, i) => {
       const ringIndex = i % rings.length;
       let ring = this.phraseRings[ringIndex];
@@ -1220,6 +1350,7 @@ export class RomanticScene {
       sprite.scale.set(width, width * (160 / 1024), 1);
       sprite.position.set(Math.cos(angle) * def.radius, Math.sin(angle * 3 + i) * 0.18, Math.sin(angle) * def.radius);
       ring.group.add(sprite);
+      this.phraseSprites.push(sprite);
     });
   }
 
@@ -1383,6 +1514,12 @@ export class RomanticScene {
       this.sculpture.rotation.x = Math.sin(elapsed * 0.23) * 0.1;
       this.galaxyDisk.rotation.y = elapsed * 0.055;
       for (const ring of this.phraseRings) ring.group.rotation.y = elapsed * ring.speed;
+      for (const sprite of this.phraseSprites) {
+        // Las frases que pasan muy cerca de la cámara se desvanecen para no tapar la escena
+        sprite.getWorldPosition(this.tempVec);
+        const near = THREE.MathUtils.smoothstep(this.tempVec.distanceTo(this.camera.position), 3.2, 6.2);
+        sprite.material.opacity = 0.92 * near;
+      }
       this.sunCorona.rotation.y = -elapsed * 0.42;
       this.sunCorona.rotation.z = elapsed * 0.24;
       const pulse = 1 + Math.sin(elapsed * 2.2) * 0.06;
