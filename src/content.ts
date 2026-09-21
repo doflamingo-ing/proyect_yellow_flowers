@@ -14,15 +14,12 @@ export const messages = [
   "Mi sonrisa favorita siempre será la que provocas tú.",
   "Si pudiera elegir otra vez, te elegiría a ti.",
   "Quiero seguir creando recuerdos contigo.",
-  "Eres una de las cosas más bonitas que me han pasado.",
-  "Cada día a tu lado es un recuerdo que quiero guardar.",
-  "Donde estés tú, quiero estar yo.",
   "Te quiero más de lo que estas palabras pueden explicar.",
 ];
 
 // Foto de cada flor (mismo orden que los mensajes de arriba).
 // Guarda las imágenes en public/photos/ y escribe aquí su ruta, por ejemplo "/photos/01.jpg".
-// Si una queda vacía ("") la tarjeta se muestra solo con el mensaje.
+// Debe haber una foto por cada mensaje; si alguna queda vacía ("") la tarjeta se muestra solo con el mensaje.
 export const photos = [
   "/photos/abi1.png",
   "/photos/abi2.png",
@@ -31,9 +28,6 @@ export const photos = [
   "/photos/abi5.png",
   "/photos/abi6.png",
   "/photos/abi7.png",
-  "",
-  "",
-  "",
 ];
 
 export const flowerTags = [
@@ -43,9 +37,6 @@ export const flowerTags = [
   "Tu bella sonrisa",
   "Te elijo siempre",
   "Nuevos recuerdos",
-  "Lo más bonito",
-  "Guardar cada día",
-  "Siempre contigo",
   "Amor infinito",
 ];
 

@@ -1259,9 +1259,9 @@ export class RomanticScene {
     // 4 Niveles Orbitales Escalonados para una distribución planetaria armónica y sin solapamientos
     const orbitTiers = [
       { radius: 2.55, baseY: -0.62, tiltX: 0.07, tiltZ: 0.035, speed: 0.070, flowerIndices: [0, 1] },
-      { radius: 3.15, baseY: -0.54, tiltX: -0.05, tiltZ: -0.045, speed: 0.056, flowerIndices: [2, 3, 4] },
-      { radius: 3.75, baseY: -0.46, tiltX: 0.06, tiltZ: -0.035, speed: 0.046, flowerIndices: [5, 6, 7] },
-      { radius: 4.35, baseY: -0.38, tiltX: -0.04, tiltZ: 0.055, speed: 0.038, flowerIndices: [8, 9] },
+      { radius: 3.15, baseY: -0.54, tiltX: -0.05, tiltZ: -0.045, speed: 0.056, flowerIndices: [2, 3] },
+      { radius: 3.75, baseY: -0.46, tiltX: 0.06, tiltZ: -0.035, speed: 0.046, flowerIndices: [4, 5] },
+      { radius: 4.35, baseY: -0.38, tiltX: -0.04, tiltZ: 0.055, speed: 0.038, flowerIndices: [6] },
     ];
 
     orbitTiers.forEach((orbit, tierIndex) => {

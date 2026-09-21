@@ -160,8 +160,10 @@ audioButton.addEventListener("click", () => {
 });
 
 let lastFocus: HTMLElement | null = null;
+let modalOpenedAt = 0;
 function openModal(modal: HTMLElement) {
   lastFocus = document.activeElement as HTMLElement;
+  modalOpenedAt = performance.now();
   modal.hidden = false;
   requestAnimationFrame(() => modal.classList.add("open"));
   modal.querySelector<HTMLButtonElement>(".close")?.focus();
@@ -231,7 +233,13 @@ const letterModal = document.querySelector<HTMLElement>("#letter-modal")!;
 document.querySelector("#letter-open")?.addEventListener("click", () => openModal(letterModal));
 
 document.querySelectorAll<HTMLElement>(".modal").forEach((modal) => {
-  modal.querySelectorAll("[data-close]").forEach((control) => control.addEventListener("click", () => closeModal(modal)));
+  modal.querySelectorAll("[data-close]").forEach((control) =>
+    control.addEventListener("click", () => {
+      // Al tocar una flor en pantalla táctil, el "clic fantasma" posterior caería sobre el fondo y cerraría la tarjeta
+      if (performance.now() - modalOpenedAt < 500) return;
+      closeModal(modal);
+    }),
+  );
 });
 
 document.addEventListener("keydown", (event) => {
